@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useClipboard } from '@vueuse/core'
+import axios from 'axios'
 
 const defaultBackend = import.meta.env.VITE_SUBCONVERTER_DEFAULT_BACKEND + '/sub?'
+const shortUrlBackend = import.meta.env.VUE_APP_MYURLS_API
 
 const options = {
   clientTypes: {
@@ -124,16 +126,18 @@ const backendVersion = ref('0.9.0')
 const customSubUrl = ref('')
 const curtomShortSubUrl = ref('')
 const loading = ref(false)
+const needUdp = ref(false)
+const customParams = ref([])
 const { copy, copied } = useClipboard({ source: customSubUrl })
 
 const cancelUploadConfig = () => {
-  uploadConfig = ''
+  // uploadConfig = ''
   dialogUploadConfigVisible.value = false
 }
 
 const saveSubUrl = () => {
-  if (this.form.sourceSubUrl !== '') {
-    this.setLocalStorageItem('sourceSubUrl', this.form.sourceSubUrl)
+  if (form.sourceSubUrl !== '') {
+    // setLocalStorageItem('sourceSubUrl', form.sourceSubUrl)
   }
 }
 
@@ -155,58 +159,58 @@ const makeUrl = () => {
     form.insert
 
   if (form.advanced === 2) {
-    if (this.form.remoteConfig) {
-      this.customSubUrl += '&config=' + encodeURIComponent(this.form.remoteConfig)
+    if (form.remoteConfig) {
+      customSubUrl.value += '&config=' + encodeURIComponent(form.remoteConfig)
     }
-    if (this.form.excludeRemarks) {
-      this.customSubUrl += '&exclude=' + encodeURIComponent(this.form.excludeRemarks)
+    if (form.excludeRemarks) {
+      customSubUrl.value += '&exclude=' + encodeURIComponent(form.excludeRemarks)
     }
-    if (this.form.includeRemarks) {
-      this.customSubUrl += '&include=' + encodeURIComponent(this.form.includeRemarks)
+    if (form.includeRemarks) {
+      customSubUrl.value += '&include=' + encodeURIComponent(form.includeRemarks)
     }
-    if (this.form.filename) {
-      this.customSubUrl += '&filename=' + encodeURIComponent(this.form.filename)
+    if (form.filename) {
+      customSubUrl.value += '&filename=' + encodeURIComponent(form.filename)
     }
-    if (this.form.appendType) {
-      this.customSubUrl += '&append_type=' + this.form.appendType.toString()
+    if (form.appendType) {
+      customSubUrl.value += '&append_type=' + form.appendType.toString()
     }
 
-    this.customSubUrl +=
+    customSubUrl.value +=
       '&emoji=' +
-      this.form.emoji.toString() +
+      form.emoji.toString() +
       '&list=' +
-      this.form.nodeList.toString() +
+      form.nodeList.toString() +
       '&tfo=' +
-      this.form.tfo.toString() +
+      form.tfo.toString() +
       '&scv=' +
-      this.form.scv.toString() +
+      form.scv.toString() +
       '&fdn=' +
-      this.form.fdn.toString() +
+      form.fdn.toString() +
       '&expand=' +
-      this.form.expand.toString() +
+      form.expand.toString() +
       '&sort=' +
-      this.form.sort.toString()
+      form.sort.toString()
 
-    if (this.needUdp) {
-      this.customSubUrl += '&udp=' + this.form.udp.toString()
+    if (needUdp.value) {
+      customSubUrl.value += '&udp=' + form.udp.toString()
     }
 
-    if (this.form.tpl.surge.doh === true) {
-      this.customSubUrl += '&surge.doh=true'
+    if (form.tpl.surge.doh === true) {
+      customSubUrl.value += '&surge.doh=true'
     }
 
-    if (this.form.clientType === 'clash') {
-      if (this.form.tpl.clash.doh === true) {
-        this.customSubUrl += '&clash.doh=true'
+    if (form.clientType === 'clash') {
+      if (form.tpl.clash.doh === true) {
+        customSubUrl.value += '&clash.doh=true'
       }
 
-      this.customSubUrl += '&new_name=' + this.form.new_name.toString()
+      customSubUrl.value += '&new_name=' + form.new_name.toString()
     }
 
-    this.customParams
+    customParams.value
       .filter((param) => param.name && param.value)
       .forEach((param) => {
-        this.customSubUrl += `&${encodeURIComponent(param.name)}=${encodeURIComponent(param.value)}`
+        customSubUrl.value += `&${encodeURIComponent(param.name)}=${encodeURIComponent(param.value)}`
       })
   }
 
@@ -216,17 +220,17 @@ const makeUrl = () => {
   }
 }
 const makeShortUrl = () => {
-  if (this.customSubUrl === '') {
-    this.$message.warning('请先生成订阅链接，再获取对应短链接')
+  if (customSubUrl.value === '') {
+    ElMessage.warning('请先生成订阅链接，再获取对应短链接')
     return false
   }
 
-  this.loading = true
+  loading.value = true
 
   let data = new FormData()
-  data.append('longUrl', btoa(this.customSubUrl))
+  data.append('longUrl', btoa(customSubUrl.value))
 
-  this.$axios
+  axios
     .post(shortUrlBackend, data, {
       header: {
         'Content-Type': 'application/form-data; charset=utf-8'
@@ -234,31 +238,33 @@ const makeShortUrl = () => {
     })
     .then((res) => {
       if (res.data.Code === 1 && res.data.ShortUrl !== '') {
-        this.curtomShortSubUrl = res.data.ShortUrl
-        this.$copyText(res.data.ShortUrl)
-        this.$message.success('短链接已复制到剪贴板')
+        curtomShortSubUrl.value = res.data.ShortUrl
+        copy()
+        ElMessage.success('短链接已复制到剪贴板')
       } else {
-        this.$message.error('短链接获取失败：' + res.data.Message)
+        ElMessage.error('短链接获取失败：' + res.data.Message)
       }
     })
     .catch(() => {
-      this.$message.error('短链接获取失败')
+      ElMessage.error('短链接获取失败')
     })
     .finally(() => {
-      this.loading = false
+      loading.value = false
     })
 }
 
 const clashInstall = () => {
-  if (this.customSubUrl === '') {
-    this.$message.error('请先填写必填项，生成订阅链接')
+  if (customSubUrl.value === '') {
+    ElMessage.error('请先填写必填项，生成订阅链接')
     return false
   }
 
   const url = 'clash://install-config?url='
   window.open(
     url +
-      encodeURIComponent(this.curtomShortSubUrl !== '' ? this.curtomShortSubUrl : this.customSubUrl)
+      encodeURIComponent(
+        curtomShortSubUrl.value !== '' ? curtomShortSubUrl.value : customSubUrl.value
+      )
   )
 }
 </script>
