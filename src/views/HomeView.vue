@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useClipboard } from '@vueuse/core'
+import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
 const defaultBackend = import.meta.env.VITE_SUBCONVERTER_DEFAULT_BACKEND + '/sub?'
@@ -117,7 +118,18 @@ const form = reactive({
   appendType: false,
   sort: false,
   fdn: false,
-  expand: false
+  expand: false,
+  insert: '',
+  tfo: false,
+  tpl: {
+    surge: {
+      doh: false
+    },
+    clash: {
+      doh: false
+    }
+  },
+  new_name: false
 })
 
 const dialogUploadConfigVisible = ref(false)
@@ -128,6 +140,7 @@ const curtomShortSubUrl = ref('')
 const loading = ref(false)
 const needUdp = ref(false)
 const customParams = ref([])
+const dialogLoadConfigVisible = ref(false)
 const { copy, copied } = useClipboard({ source: customSubUrl })
 
 const cancelUploadConfig = () => {
@@ -208,8 +221,8 @@ const makeUrl = () => {
     }
 
     customParams.value
-      .filter((param) => param.name && param.value)
-      .forEach((param) => {
+      .filter((param: any) => param.name && param.value)
+      .forEach((param: any) => {
         customSubUrl.value += `&${encodeURIComponent(param.name)}=${encodeURIComponent(param.value)}`
       })
   }
@@ -227,12 +240,12 @@ const makeShortUrl = () => {
 
   loading.value = true
 
-  let data = new FormData()
+  const data = new FormData()
   data.append('longUrl', btoa(customSubUrl.value))
 
   axios
     .post(shortUrlBackend, data, {
-      header: {
+      headers: {
         'Content-Type': 'application/form-data; charset=utf-8'
       }
     })
