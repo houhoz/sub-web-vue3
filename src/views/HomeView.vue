@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useClipboard } from '@vueuse/core'
-import { ElMessage } from 'element-plus'
 
 const defaultBackend = import.meta.env.VITE_SUBCONVERTER_DEFAULT_BACKEND + '/sub?'
 
