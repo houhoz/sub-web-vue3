@@ -303,7 +303,7 @@ const clashInstall = () => {
               </el-select>
             </el-form-item>
 
-            <div v-if="form.advanced === 2">
+            <!-- <div v-if="form.advanced === 2">
               <el-form-item label="后端地址:">
                 <el-autocomplete
                   style="width: 100%"
@@ -446,7 +446,7 @@ const clashInstall = () => {
                   </el-popover>
                 </el-row>
               </el-form-item>
-            </div>
+            </div> -->
 
             <div style="margin-top: 50px"></div>
 
